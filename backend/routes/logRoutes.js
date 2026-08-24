@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 
-const { createLog } = require(".../controllers/logController");
+const { createLog } = require("../controllers/logController");
 
 router.post("/", createLog);
 
