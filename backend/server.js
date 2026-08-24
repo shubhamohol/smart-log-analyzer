@@ -10,7 +10,7 @@ const PORT = process.env.PORT || 5000;
 app.use(express.json());
 
 const db = require("./config/db");
-const logRoutes = require("../routes/logRoutes");
+const logRoutes = require("./routes/logRoutes");
 
 db.query("SELECT 1", (error) => {
     if (error) {
