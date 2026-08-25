@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { getLogs } from "../services/api";
+import { useCallback, useEffect, useState } from "react";
+import { deleteLog, getLogs } from "../services/api";
 
 import StatsCards from "./StatsCards";
 import LogForm from "./LogForm";
@@ -10,30 +10,32 @@ const Dashboard = () => {
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  const loadLogs = async () => {
-
+  const loadLogs = useCallback(async () => {
     try {
-
       setLoading(true);
 
       const data = await getLogs();
 
       setLogs(data);
-
     } catch (error) {
-
       console.error("Error loading logs:", error);
-
     } finally {
-
       setLoading(false);
-
     }
-  };
+  }, []);
 
   useEffect(() => {
-    loadLogs();
-  }, []);
+    const loadTimer = setTimeout(loadLogs, 0);
+
+    return () => clearTimeout(loadTimer);
+  }, [loadLogs]);
+
+  const handleLogDeleted = async (id) => {
+    await deleteLog(id);
+    setLogs((currentLogs) => currentLogs.filter((log) => log.id !== id));
+  };
+
+
 
   return (
     <div className="min-h-screen bg-slate-100">
@@ -101,7 +103,7 @@ const Dashboard = () => {
               Loading logs...
             </div>
           ) : (
-            <LogTable logs={logs} />
+            <LogTable logs={logs} onLogDeleted={handleLogDeleted} />
           )}
 
         </div>
