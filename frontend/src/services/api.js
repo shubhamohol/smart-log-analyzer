@@ -1,4 +1,4 @@
-const API_URL = "http://localhost:5000/api/logs";
+const API_URL = "smart-log-analyzer-backend-six.vercel.app";
 
 export const getLogs = async () => {
   const response = await fetch(API_URL);
