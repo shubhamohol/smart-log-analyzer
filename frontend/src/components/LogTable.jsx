@@ -1,4 +1,8 @@
-const LogTable = ({ logs }) => {
+import { useState } from "react";
+
+const LogTable = ({ logs, onLogDeleted }) => {
+  const [deletingId, setDeletingId] = useState(null);
+  const [deleteError, setDeleteError] = useState("");
 
   const getLevelStyle = (level) => {
     switch (level?.toUpperCase()) {
@@ -17,6 +21,19 @@ const LogTable = ({ logs }) => {
     }
   };
 
+  const handleDelete = async (id) => {
+    try {
+      setDeleteError("");
+      setDeletingId(id);
+      await onLogDeleted(id);
+    } catch (error) {
+      console.error("Error deleting log:", error);
+      setDeleteError(error.message || "Failed to delete log.");
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
   return (
     <div className="overflow-hidden rounded-xl bg-white shadow-sm border border-slate-200">
 
@@ -28,6 +45,12 @@ const LogTable = ({ logs }) => {
         <p className="mt-1 text-sm text-slate-500">
           Recent application logs
         </p>
+
+        {deleteError && (
+          <div className="mt-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600">
+            {deleteError}
+          </div>
+        )}
       </div>
 
       {logs.length === 0 ? (
@@ -56,19 +79,23 @@ const LogTable = ({ logs }) => {
                 <th className="px-5 py-4 text-sm font-semibold">
                   Timestamp
                 </th>
+
+                <th className="px-5 py-4 text-sm font-semibold">
+                  Action
+                </th>
               </tr>
             </thead>
 
             <tbody>
 
-              {logs.map((log) => (
+              {logs.map((log, index) => (
                 <tr
                   key={log.id}
                   className="border-t border-slate-100 hover:bg-slate-50"
                 >
 
                   <td className="px-5 py-4 text-sm">
-                    #{log.id}
+                    #{index + 1}
                   </td>
 
                   <td className="px-5 py-4">
@@ -86,7 +113,20 @@ const LogTable = ({ logs }) => {
                   </td>
 
                   <td className="whitespace-nowrap px-5 py-4 text-sm text-slate-500">
-                    {new Date(log.timestamp).toLocaleString()}
+                    {log.created_at || log.timestamp
+                      ? new Date(log.created_at || log.timestamp).toLocaleString()
+                      : "-"}
+                  </td>
+
+                  <td className="px-5 py-4">
+                    <button
+                      type="button"
+                      onClick={() => handleDelete(log.id)}
+                      disabled={deletingId === log.id}
+                      className="rounded-lg bg-red-600 px-3 py-2 text-sm font-semibold text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {deletingId === log.id ? "Deleting..." : "Delete"}
+                    </button>
                   </td>
 
                 </tr>

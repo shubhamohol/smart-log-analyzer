@@ -1,17 +1,45 @@
-import axios from "axios";
-
-const API = axios.create({
-  baseURL: "http://localhost:5000/api",
-});
+const API_URL = "http://localhost:5000/api/logs";
 
 export const getLogs = async () => {
-  const response = await API.get("/logs");
-  return response.data;
+  const response = await fetch(API_URL);
+
+  if (!response.ok) {
+    throw new Error("Failed to fetch logs");
+  }
+
+  return response.json();
 };
 
-export const createLog = async (log) => {
-  const response = await API.post("/logs", log);
-  return response.data;
+export const addLog = async (log) => {
+  const response = await fetch(API_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(log),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+
+    throw new Error(
+      errorData.message || "Failed to add log"
+    );
+  }
+
+  return response.json();
 };
 
-export default API;
+export const deleteLog = async (id) => {
+  const response = await fetch(`${API_URL}/${id}`, {
+    method: "DELETE",
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+
+    throw new Error(
+      errorData.message || "Failed to delete log"
+    );
+  }
+};

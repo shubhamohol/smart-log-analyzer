@@ -2,12 +2,32 @@ const db = require("../config/db");
 const detectAnomaly = require("../services/anomalyDetector");
 const { generateExplanation } = require("../services/aiService");
 
+const getLogs = async (req, res) => {
+    try {
+        const [logs] = await db.promise().query(
+            `SELECT id, timestamp, event_type AS level, severity, source,
+                    message, status_code, is_anomaly, anomaly_score,
+                    anomaly_reason, ai_explanation, ai_root_cause,
+                    ai_next_step, created_at
+             FROM logs
+             ORDER BY id DESC`
+        );
+
+        res.status(200).json(logs);
+    } catch (error) {
+        console.error("Error fetching logs:", error);
+        res.status(500).json({
+            message: "Failed to fetch logs"
+        });
+    }
+};
+
 const createLog = async (req, res) => {
     try {
         const { level, message, source } = req.body;
 
         // 1. Validate input
-        if (!message) {
+        if (!message || !message.trim()) {
             return res.status(400).json({
                 success: false,
                 message: "Log message is required"
@@ -38,16 +58,16 @@ const createLog = async (req, res) => {
         // 4. Save result in MySQL
         const sql = `
             INSERT INTO logs
-            (level, message, source, is_anomaly, severity, ai_explanation)
-            VALUES (?, ?, ?, ?, ?, ?)
+            (timestamp, event_type, severity, source, message, is_anomaly, ai_explanation)
+            VALUES (NOW(), ?, ?, ?, ?, ?, ?)
         `;
 
         const values = [
             level || "INFO",
-            message,
-            source || null,
-            anomalyResult.isAnomaly,
             anomalyResult.severity,
+            source || "frontend",
+            message,
+            anomalyResult.isAnomaly,
             aiExplanation
         ];
 
@@ -61,7 +81,7 @@ const createLog = async (req, res) => {
                 id: result.insertId,
                 level: level || "INFO",
                 message,
-                source: source || null,
+                source: source || "frontend",
                 isAnomaly: anomalyResult.isAnomaly,
                 severity: anomalyResult.severity,
                 reason: anomalyResult.reason,
@@ -79,6 +99,38 @@ const createLog = async (req, res) => {
     }
 };
 
+const deleteLog = async (req, res) => {
+    const logId = Number(req.params.id);
+
+    if (!Number.isInteger(logId) || logId < 1) {
+        return res.status(400).json({
+            message: "A valid log ID is required"
+        });
+    }
+
+    try {
+        const [result] = await db.promise().query(
+            "DELETE FROM logs WHERE id = ?",
+            [logId]
+        );
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({
+                message: "Log not found"
+            });
+        }
+
+        res.status(204).send();
+    } catch (error) {
+        console.error("Error deleting log:", error);
+        res.status(500).json({
+            message: "Failed to delete log"
+        });
+    }
+};
+
 module.exports = {
-    createLog
+    createLog,
+    deleteLog,
+    getLogs
 };
